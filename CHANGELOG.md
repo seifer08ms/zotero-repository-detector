@@ -5,6 +5,7 @@
 - Fixed the built Fluent resource name used by Zotero 7 (repositorydetector-repository-detector.ftl).
 - Repeated item-pane decoration after render so Code Repository / 代码仓库 stays visible after upgrading from older versions.
 - Preserved multiple-repository clickable links and legacy-row cleanup from v0.2.4.
+- Added version-driven automatic GitHub Releases from the main branch.
 
 ## 0.2.4
 
@@ -26,14 +27,3 @@
 - Made Repository entries openable from the item pane using Zotero-style open-link buttons.
 - Made Repository column provider labels clickable.
 - Preserved automatic Web Link attachment recognition, repository tagging, mirror fallback, and small-snapshot attachment.
-
-## 0.2.1
-
-- Fixed Zotero 7 manifest validation by including a valid `update_url`.
-- Locked the packaged compatibility range to Zotero 7.0.x.
-
-## 0.2.0
-
-- Rebuilt the plugin around the Zotero 7 bootstrap/manifest structure.
-- Added GitHub, Hugging Face, and Gitee detection.
-- Added Repository item-pane row, item-tree column, tag-based filtering, and optional small snapshot downloads.

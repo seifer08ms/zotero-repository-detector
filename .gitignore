@@ -1,0 +1,9 @@
+node_modules/
+.scaffold/
+*.xpi
+*.zip
+.DS_Store
+.env
+.env.*
+!.env.example
+coverage/

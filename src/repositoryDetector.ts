@@ -24,7 +24,6 @@ const RepositoryDetector:any = {
       });
     } catch (_) {}
 
-    // Remove stale registrations from older versions before registering v0.2.4.
     for (const rowID of [LEGACY_ROW_ID, ROW_ID]) {
       try { Zotero.ItemPaneManager.unregisterInfoRow(rowID); } catch (_) {}
     }
@@ -119,6 +118,7 @@ const RepositoryDetector:any = {
 
     const context=win.document.getElementById("zotero-itemmenu");
     add(context,"repository-detector-context","检测开源代码仓库",()=>this.scanSelected(win));
+
     setTimeout(decorateRepositoryRows,0);
     setTimeout(decorateRepositoryRows,100);
     setTimeout(decorateRepositoryRows,500);
@@ -132,7 +132,6 @@ const RepositoryDetector:any = {
     ]) {
       try { win?.document?.getElementById(id)?.remove(); } catch (_) {}
     }
-    // Remove stale legacy rows that can survive a hot plugin update.
     try {
       for (const row of win?.document?.querySelectorAll?.(
         '.meta-row[data-custom-row-id="'+LEGACY_ROW_ID+'"]'
