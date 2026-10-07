@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.6
+
+- Replaced the fragile custom Info Row with Zotero 7's official custom Item Pane Section API.
+- The right pane now has a dedicated Code Repository / 代码仓库 section with a reliable section title.
+- Each repository is rendered on its own row with a clickable URL and browser-open button.
+- Multiple repositories are displayed independently instead of being squeezed into one field.
+- Legacy blank repository rows from older versions are unregistered and removed during startup.
+- Localization is loaded before the section is registered.
+
+# Changelog
+
 ## 0.2.5
 
 - Fixed the built Fluent resource name used by Zotero 7 (repositorydetector-repository-detector.ftl).

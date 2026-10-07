@@ -1,21 +1,46 @@
 import core from "./detectorCore";
-import { repositoryValue, setRepositoryValue } from "./repo";
-import { renderRepositoryCell, decorateRepositoryRows } from "./ui";
+import { repositoryValue } from "./repo";
+import { renderRepositoryCell, renderRepositorySection } from "./ui";
 
 const ID="repository-detector@example.com";
-const LEGACY_ROW_ID="repository-detector-repository";
-const ROW_ID="repository-detector-code-repository";
+const LEGACY_ROW_IDS=[
+  "repository-detector-repository",
+  "repository-detector-code-repository",
+];
+const SECTION_ID="repository-detector-code-repositories";
+const FTL_FILE="repositorydetector-repository-detector.ftl";
 
 const RepositoryDetector:any = {
   ...core,
   rootURI:"",
   columnID:null,
-  rowID:null,
+  sectionID:null,
   notifierID:null,
   windows:new Set<any>(),
 
+  ensureLocalization(win:any) {
+    try { win?.MozXULElement?.insertFTLIfNeeded(FTL_FILE); } catch (_) {}
+  },
+
+  cleanupLegacyRows(win:any) {
+    if (!win?.document) return;
+    for (const rowID of LEGACY_ROW_IDS) {
+      try {
+        for (const row of Array.from(
+          win.document.querySelectorAll(
+            '.meta-row[data-custom-row-id="'+rowID+'"]'
+          )
+        ) as any[]) row.remove();
+      } catch (_) {}
+    }
+  },
+
   async init({rootURI}:any) {
     this.rootURI=rootURI;
+
+    // Localization must be present before Zotero renders plugin UI.
+    for (const win of Zotero.getMainWindows()) this.ensureLocalization(win);
+
     try {
       Zotero.PreferencePanes.register({
         pluginID:ID,
@@ -24,9 +49,10 @@ const RepositoryDetector:any = {
       });
     } catch (_) {}
 
-    for (const rowID of [LEGACY_ROW_ID, ROW_ID]) {
+    for (const rowID of LEGACY_ROW_IDS) {
       try { Zotero.ItemPaneManager.unregisterInfoRow(rowID); } catch (_) {}
     }
+    try { Zotero.ItemPaneManager.unregisterSection(SECTION_ID); } catch (_) {}
 
     const locale=String((Zotero as any).locale || "").toLowerCase();
     const codeRepoLabel=locale.startsWith("zh") ? "代码仓库" : "Code Repo";
@@ -40,27 +66,23 @@ const RepositoryDetector:any = {
         renderRepositoryCell(data,column,doc),
     });
 
-    this.rowID=Zotero.ItemPaneManager.registerInfoRow({
-      rowID:ROW_ID,
+    this.sectionID=Zotero.ItemPaneManager.registerSection({
+      paneID:SECTION_ID,
       pluginID:ID,
-      label:{l10nID:"repository-detector-info-row-label"},
-      position:"afterCreators",
-      editable:true,
-      multiline:false,
-      nowrap:true,
-      onGetData:({item}:any)=>{
-        setTimeout(decorateRepositoryRows,0);
-        setTimeout(decorateRepositoryRows,100);
-        return repositoryValue(item);
+      header:{
+        l10nID:"repository-detector-section-header",
+        icon:"chrome://zotero/skin/16/universal/book.svg",
       },
-      onSetData:async({item,value}:any)=>{
-        await setRepositoryValue(item,String(value||""),this.tagName());
-        setTimeout(decorateRepositoryRows,0);
-        setTimeout(decorateRepositoryRows,100);
+      sidenav:{
+        l10nID:"repository-detector-section-sidenav",
+        icon:"chrome://zotero/skin/20/universal/save.svg",
       },
-      onItemChange:()=>{
-        setTimeout(decorateRepositoryRows,0);
-        setTimeout(decorateRepositoryRows,100);
+      onItemChange:({item,setEnabled}:any)=>{
+        setEnabled(!!item?.isRegularItem?.());
+        return true;
+      },
+      onRender:({body,item,setSectionSummary}:any)=>{
+        renderRepositorySection(body,item,setSectionSummary);
       },
     });
 
@@ -77,11 +99,13 @@ const RepositoryDetector:any = {
       try { await Zotero.ItemTreeManager.unregisterColumn(this.columnID); } catch (_) {}
       this.columnID=null;
     }
-    for (const rowID of [this.rowID, ROW_ID, LEGACY_ROW_ID]) {
-      if (!rowID) continue;
+    if (this.sectionID) {
+      try { Zotero.ItemPaneManager.unregisterSection(SECTION_ID); } catch (_) {}
+      this.sectionID=null;
+    }
+    for (const rowID of LEGACY_ROW_IDS) {
       try { Zotero.ItemPaneManager.unregisterInfoRow(rowID); } catch (_) {}
     }
-    this.rowID=null;
     for (const win of Zotero.getMainWindows()) this.removeFromWindow(win);
   },
 
@@ -101,7 +125,8 @@ const RepositoryDetector:any = {
   addToWindow(win:any) {
     if (!win?.document || this.windows.has(win)) return;
     this.windows.add(win);
-    try { win.MozXULElement?.insertFTLIfNeeded("repositorydetector-repository-detector.ftl"); } catch (_) {}
+    this.ensureLocalization(win);
+    this.cleanupLegacyRows(win);
 
     const add=(parent:any,id:string,label:string,callback:any)=>{
       if (!parent || win.document.getElementById(id)) return;
@@ -118,10 +143,6 @@ const RepositoryDetector:any = {
 
     const context=win.document.getElementById("zotero-itemmenu");
     add(context,"repository-detector-context","检测开源代码仓库",()=>this.scanSelected(win));
-
-    setTimeout(decorateRepositoryRows,0);
-    setTimeout(decorateRepositoryRows,100);
-    setTimeout(decorateRepositoryRows,500);
   },
 
   removeFromWindow(win:any) {
@@ -132,11 +153,7 @@ const RepositoryDetector:any = {
     ]) {
       try { win?.document?.getElementById(id)?.remove(); } catch (_) {}
     }
-    try {
-      for (const row of win?.document?.querySelectorAll?.(
-        '.meta-row[data-custom-row-id="'+LEGACY_ROW_ID+'"]'
-      ) || []) row.remove();
-    } catch (_) {}
+    this.cleanupLegacyRows(win);
     this.windows.delete(win);
   },
 };

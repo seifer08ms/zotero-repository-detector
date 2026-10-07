@@ -1,11 +1,7 @@
-import { extractRepositories, platformLabel } from "./repo";
+import { extractRepositories, platformLabel, repositoryValue } from "./repo";
 
-const LEGACY_ROW_ID="repository-detector-repository";
-const ROW_ID="repository-detector-code-repository";
-
-function currentLabel() {
-  const locale=String((Zotero as any).locale || "").toLowerCase();
-  return locale.startsWith("zh") ? "代码仓库" : "Code Repository";
+function localeIsChinese() {
+  return String((Zotero as any).locale || "").toLowerCase().startsWith("zh");
 }
 
 export function renderRepositoryCell(data:string,column:any,doc:any) {
@@ -35,78 +31,87 @@ export function renderRepositoryCell(data:string,column:any,doc:any) {
   return cell;
 }
 
-export function decorateRepositoryRows() {
-  for (const win of Zotero.getMainWindows()) {
-    const doc=win.document;
+export function renderRepositorySection(
+  body:any,
+  item:any,
+  setSectionSummary:(summary:string)=>void
+) {
+  while (body.firstChild) body.firstChild.remove();
 
-    // Remove the old row that may survive an in-place upgrade.
-    for (const oldRow of Array.from(
-      doc.querySelectorAll('.meta-row[data-custom-row-id="'+LEGACY_ROW_ID+'"]')
-    ) as any[]) {
-      try { oldRow.remove(); } catch (_) {}
-    }
+  const doc=body.ownerDocument;
+  const repos=extractRepositories(repositoryValue(item));
 
-    const rows=doc.querySelectorAll(
-      '.meta-row[data-custom-row-id="'+ROW_ID+'"]'
-    );
+  setSectionSummary(
+    repos.length
+      ? (localeIsChinese() ? repos.length+" 个仓库" : repos.length+" repositor"+(repos.length===1?"y":"ies"))
+      : ""
+  );
 
-    for (const row of Array.from(rows) as any[]) {
-      const label:any=row.querySelector(".meta-label label, .meta-label .key, .meta-label");
-      if (label) label.textContent=currentLabel();
+  const wrapper=doc.createElement("div");
+  wrapper.className="repository-detector-section";
+  wrapper.style.display="grid";
+  wrapper.style.gap="6px";
+  wrapper.style.padding="2px 0 6px";
 
-      const data:any=row.querySelector(".meta-data");
-      const value:any=row.querySelector(".meta-data > .value");
-      if (!value || !data) continue;
-
-      value.style.cursor="text";
-
-      if (!value.dataset.repoClick) {
-        value.dataset.repoClick="1";
-        value.addEventListener("dblclick",()=>{
-          const repo=extractRepositories(String(value.value||""))[0];
-          if (repo) Zotero.launchURL(repo.url);
-        });
-      }
-
-      // Rebuild provider links every refresh so edits are reflected immediately.
-      data.querySelector(".repository-detector-link-strip")?.remove();
-
-      const repos=extractRepositories(String(value.value||""));
-      if (!repos.length) continue;
-
-      const strip=doc.createElement("span");
-      strip.className="repository-detector-link-strip";
-      strip.style.display="inline-flex";
-      strip.style.alignItems="center";
-      strip.style.gap="6px";
-      strip.style.marginInlineStart="6px";
-      strip.style.whiteSpace="nowrap";
-
-      repos.forEach((repo,index)=>{
-        if (index) {
-          const sep=doc.createElement("span");
-          sep.textContent="·";
-          sep.style.opacity="0.65";
-          strip.appendChild(sep);
-        }
-
-        const link=doc.createElement("span");
-        link.className="text-link";
-        link.setAttribute("role","link");
-        link.setAttribute("title",repo.url);
-        link.textContent=repos.length > 1
-          ? platformLabel(repo)+" "+(index+1)
-          : platformLabel(repo);
-        link.addEventListener("click",(event:any)=>{
-          event.stopPropagation();
-          Zotero.launchURL(repo.url);
-        });
-        strip.appendChild(link);
-      });
-
-      data.appendChild(strip);
-    }
+  if (!repos.length) {
+    const empty=doc.createElement("div");
+    empty.textContent=localeIsChinese()
+      ? "当前条目尚未检测到代码仓库"
+      : "No code repository detected for this item";
+    empty.style.opacity="0.7";
+    wrapper.appendChild(empty);
+    body.appendChild(wrapper);
+    return;
   }
+
+  repos.forEach((repo,index)=>{
+    const row=doc.createElement("div");
+    row.className="repository-detector-repository-row";
+    row.style.display="grid";
+    row.style.gridTemplateColumns="max-content minmax(0, 1fr) max-content";
+    row.style.alignItems="center";
+    row.style.columnGap="8px";
+    row.style.minWidth="0";
+
+    const provider=doc.createElement("span");
+    provider.textContent=platformLabel(repo);
+    provider.style.fontWeight="600";
+    provider.style.whiteSpace="nowrap";
+    row.appendChild(provider);
+
+    const link=doc.createElement("span");
+    link.className="text-link";
+    link.setAttribute("role","link");
+    link.setAttribute("title",repo.url);
+    link.textContent=repo.url;
+    link.style.overflow="hidden";
+    link.style.textOverflow="ellipsis";
+    link.style.whiteSpace="nowrap";
+    link.style.cursor="pointer";
+    link.addEventListener("click",(event:any)=>{
+      event.stopPropagation();
+      Zotero.launchURL(repo.url);
+    });
+    row.appendChild(link);
+
+    const open=doc.createElement("button");
+    open.type="button";
+    open.textContent="↗";
+    open.setAttribute(
+      "title",
+      localeIsChinese() ? "在浏览器中打开" : "Open in browser"
+    );
+    open.style.cursor="pointer";
+    open.addEventListener("click",(event:any)=>{
+      event.stopPropagation();
+      Zotero.launchURL(repo.url);
+    });
+    row.appendChild(open);
+
+    wrapper.appendChild(row);
+  });
+
+  body.appendChild(wrapper);
 }
 
 export function createProgress(total:number) {
