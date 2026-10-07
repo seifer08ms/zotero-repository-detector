@@ -1,0 +1,29 @@
+{
+  "name": "zotero-repository-detector",
+  "type": "module",
+  "version": "0.2.2",
+  "description": "A Zotero 7+ plugin that detects open-source repositories for papers and can attach small repository snapshots.",
+  "config": {
+    "addonName": "Repository Detector",
+    "addonID": "repository-detector@example.com",
+    "addonRef": "repositorydetector",
+    "addonInstance": "RepositoryDetectorAddon",
+    "prefsPrefix": "extensions.repositoryDetector"
+  },
+  "author": "Repository Detector contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "zotero-plugin serve",
+    "build": "zotero-plugin build && tsc --noEmit",
+    "release": "zotero-plugin release",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "zotero-plugin-scaffold": "^0.8.2",
+    "zotero-types": "^4.1.0-beta.4"
+  }
+}
