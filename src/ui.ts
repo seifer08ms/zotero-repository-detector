@@ -13,6 +13,8 @@ export function renderRepositoryCell(data:string,column:any,doc:any) {
   cell.className="cell "+(column.className||"");
   cell.style.display="flex";
   cell.style.gap="6px";
+  cell.style.alignItems="center";
+
   extractRepositories(data).forEach((repo,i)=>{
     if (i) {
       const separator=doc.createElement("span");
@@ -23,6 +25,7 @@ export function renderRepositoryCell(data:string,column:any,doc:any) {
     link.className="text-link";
     link.setAttribute("role","link");
     link.textContent=platformLabel(repo);
+    link.setAttribute("title",repo.url);
     link.onclick=(event:any)=>{
       event.stopPropagation();
       Zotero.launchURL(repo.url);
@@ -36,7 +39,7 @@ export function decorateRepositoryRows() {
   for (const win of Zotero.getMainWindows()) {
     const doc=win.document;
 
-    // v0.2.3 and older could leave a blank legacy row after an in-place update.
+    // Remove the old row that may survive an in-place upgrade.
     for (const oldRow of Array.from(
       doc.querySelectorAll('.meta-row[data-custom-row-id="'+LEGACY_ROW_ID+'"]')
     ) as any[]) {
@@ -48,13 +51,12 @@ export function decorateRepositoryRows() {
     );
 
     for (const row of Array.from(rows) as any[]) {
-      // Do not rely solely on Fluent: explicitly provide the visible label as a fallback.
       const label:any=row.querySelector(".meta-label label, .meta-label .key, .meta-label");
       if (label) label.textContent=currentLabel();
 
       const data:any=row.querySelector(".meta-data");
       const value:any=row.querySelector(".meta-data > .value");
-      if (!value) continue;
+      if (!value || !data) continue;
 
       value.style.cursor="text";
 
@@ -66,20 +68,43 @@ export function decorateRepositoryRows() {
         });
       }
 
+      // Rebuild provider links every refresh so edits are reflected immediately.
+      data.querySelector(".repository-detector-link-strip")?.remove();
+
       const repos=extractRepositories(String(value.value||""));
-      let button:any=data?.querySelector?.(".repository-detector-open-link");
-      if (!button && data) {
-        button=doc.createXULElement("toolbarbutton");
-        button.className="zotero-clicky zotero-clicky-open-link show-on-hover repository-detector-open-link";
-        button.setAttribute("data-l10n-id","item-button-view-online");
-        button.addEventListener("click",(event:any)=>{
+      if (!repos.length) continue;
+
+      const strip=doc.createElement("span");
+      strip.className="repository-detector-link-strip";
+      strip.style.display="inline-flex";
+      strip.style.alignItems="center";
+      strip.style.gap="6px";
+      strip.style.marginInlineStart="6px";
+      strip.style.whiteSpace="nowrap";
+
+      repos.forEach((repo,index)=>{
+        if (index) {
+          const sep=doc.createElement("span");
+          sep.textContent="·";
+          sep.style.opacity="0.65";
+          strip.appendChild(sep);
+        }
+
+        const link=doc.createElement("span");
+        link.className="text-link";
+        link.setAttribute("role","link");
+        link.setAttribute("title",repo.url);
+        link.textContent=repos.length > 1
+          ? platformLabel(repo)+" "+(index+1)
+          : platformLabel(repo);
+        link.addEventListener("click",(event:any)=>{
           event.stopPropagation();
-          const repo=extractRepositories(String(value.value||""))[0];
-          if (repo) Zotero.launchURL(repo.url);
+          Zotero.launchURL(repo.url);
         });
-        data.appendChild(button);
-      }
-      if (button) button.hidden=repos.length===0;
+        strip.appendChild(link);
+      });
+
+      data.appendChild(strip);
     }
   }
 }

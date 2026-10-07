@@ -6,7 +6,7 @@
 - Migrated the item-pane row to a new row ID and proactively removes the legacy row registration.
 - Added a direct visible label fallback, independent of Fluent loading order.
 - Changed the item-pane field from a multiline box to a compact single-line URL-style field.
-- Added a Zotero-style open-link button next to Code Repository.
+- Added clickable provider links next to Code Repository; multiple repositories are shown side by side and open independently.
 
 ## 0.2.3
 
