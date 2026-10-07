@@ -29,7 +29,7 @@ export function decorateRepositoryRows() {
     const rows=win.document.querySelectorAll(
       '.meta-row[data-custom-row-id="repository-detector-repository"]'
     );
-    for (const row of rows) {
+    for (const row of Array.from(rows) as any[]) {
       const value:any=row.querySelector(".meta-data > .value");
       if (!value || value.dataset.repoClick) continue;
       value.dataset.repoClick="1";

@@ -75,7 +75,7 @@ const RepositoryDetector:any = {
   notify(event:string,type:string,ids:any[]) {
     if (type !== "item" || !["add","modify"].includes(event) || !this.prefBool("autoDetectOnAdd",true)) return;
     for (const id of ids || []) {
-      let item=Zotero.Items.get(id);
+      let item:any=Zotero.Items.get(id);
       if (item?.isAttachment?.() && item.parentItemID) item=Zotero.Items.get(item.parentItemID);
       if (item?.isRegularItem?.()) {
         Zotero.Promise.delay(900)

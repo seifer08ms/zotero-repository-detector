@@ -54,7 +54,7 @@ const core:any = {
     for (const repo of extractRepositories(text)) direct.set(repo.url,repo);
 
     for (const id of item.getAttachments?.() || []) {
-      const attachment=Zotero.Items.get(id);
+      const attachment:any=Zotero.Items.get(id);
       if (!attachment?.isAttachment?.()) continue;
       for (const repo of extractRepositories(attachment.getField("url") || "")) {
         direct.set(repo.url,repo);

@@ -31,7 +31,7 @@ export async function downloadSnapshot(
   if (!repo || repo.platform === "huggingface") return "unsupported";
 
   for (const id of item.getAttachments?.() || []) {
-    const a = Zotero.Items.get(id);
+    const a:any = Zotero.Items.get(id);
     if (String(a?.getField?.("url") || "") === repo.url) return "exists";
   }
 

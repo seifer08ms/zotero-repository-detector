@@ -1,3 +1,5 @@
+declare const _globalThis: any;
+
 import RepositoryDetector from "./repositoryDetector";
 
 const addon = {
@@ -11,12 +13,16 @@ const addon = {
         Zotero.unlockPromise,
         Zotero.uiReadyPromise,
       ]);
-      await RepositoryDetector.init({ rootURI: (_globalThis as any).rootURI });
+      await RepositoryDetector.init({ rootURI: _globalThis.rootURI });
       addon.data.initialized = true;
     },
     async onMainWindowLoad(window: any) { RepositoryDetector.addToWindow(window); },
     async onMainWindowUnload(window: any) { RepositoryDetector.removeFromWindow(window); },
-    async onShutdown() { await RepositoryDetector.shutdown(); delete (Zptero as any).RepositoryDetectorAddon; },
+    async onShutdown() {
+      await RepositoryDetector.shutdown();
+      delete (Zotero as any).RepositoryDetectorAddon;
+    },
   },
 };
-(Zotero as any).RepositoryDetectorAddon = addon;
+
+(Zotero as any).RepositoryDetectorAddon = addon;
