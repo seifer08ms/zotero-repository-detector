@@ -91,8 +91,8 @@ npm start
 Push a version tag such as:
 
 ```bash
-git tag v0.2.4
-git push origin v0.2.4
+git tag v0.2.5
+git push origin v0.2.5
 ```
 
 The included GitHub Actions release workflow builds the plugin, packages the XPI, generates Zotero `update.json` metadata with a SHA-256 hash, and publishes both files to the tagged GitHub Release.

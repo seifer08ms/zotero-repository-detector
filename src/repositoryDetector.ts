@@ -51,13 +51,18 @@ const RepositoryDetector:any = {
       nowrap:true,
       onGetData:({item}:any)=>{
         setTimeout(decorateRepositoryRows,0);
+        setTimeout(decorateRepositoryRows,100);
         return repositoryValue(item);
       },
       onSetData:async({item,value}:any)=>{
         await setRepositoryValue(item,String(value||""),this.tagName());
         setTimeout(decorateRepositoryRows,0);
+        setTimeout(decorateRepositoryRows,100);
       },
-      onItemChange:()=>setTimeout(decorateRepositoryRows,0),
+      onItemChange:()=>{
+        setTimeout(decorateRepositoryRows,0);
+        setTimeout(decorateRepositoryRows,100);
+      },
     });
 
     this.notifierID=Zotero.Notifier.registerObserver(this,["item"],"repository-detector");
@@ -97,7 +102,7 @@ const RepositoryDetector:any = {
   addToWindow(win:any) {
     if (!win?.document || this.windows.has(win)) return;
     this.windows.add(win);
-    try { win.MozXULElement?.insertFTLIfNeeded("repository-detector.ftl"); } catch (_) {}
+    try { win.MozXULElement?.insertFTLIfNeeded("repositorydetector-repository-detector.ftl"); } catch (_) {}
 
     const add=(parent:any,id:string,label:string,callback:any)=>{
       if (!parent || win.document.getElementById(id)) return;
@@ -115,6 +120,8 @@ const RepositoryDetector:any = {
     const context=win.document.getElementById("zotero-itemmenu");
     add(context,"repository-detector-context","检测开源代码仓库",()=>this.scanSelected(win));
     setTimeout(decorateRepositoryRows,0);
+    setTimeout(decorateRepositoryRows,100);
+    setTimeout(decorateRepositoryRows,500);
   },
 
   removeFromWindow(win:any) {

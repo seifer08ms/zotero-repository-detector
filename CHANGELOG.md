@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5
+
+- Fixed the built Fluent resource name used by Zotero 7 (repositorydetector-repository-detector.ftl).
+- Repeated item-pane decoration after render so Code Repository / 代码仓库 stays visible after upgrading from older versions.
+- Preserved multiple-repository clickable links and legacy-row cleanup from v0.2.4.
+
 ## 0.2.4
 
 - Fixed a blank Code Repository label when upgrading from older plugin versions.
