@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.4
+
+- Fixed a blank Code Repository label when upgrading from older plugin versions.
+- Migrated the item-pane row to a new row ID and proactively removes the legacy row registration.
+- Added a direct visible label fallback, independent of Fluent loading order.
+- Changed the item-pane field from a multiline box to a compact single-line URL-style field.
+- Added a Zotero-style open-link button next to Code Repository.
+
 ## 0.2.3
 
 - Renamed the item-pane field to **Code Repository** in English and **代码仓库** in Chinese.

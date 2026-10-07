@@ -85,8 +85,8 @@ npm start
 项目已经包含 GitHub Actions。推送版本 tag，例如：
 
 ```bash
-git tag v0.2.3
-git push origin v0.2.3
+git tag v0.2.4
+git push origin v0.2.4
 ```
 
 Release workflow 会自动构建插件、打包 XPI、生成带 SHA-256 校验值的 Zotero `update.json`，并把两者发布到对应 GitHub Release。

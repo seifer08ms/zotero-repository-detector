@@ -3,6 +3,8 @@ import { repositoryValue, setRepositoryValue } from "./repo";
 import { renderRepositoryCell, decorateRepositoryRows } from "./ui";
 
 const ID="repository-detector@example.com";
+const LEGACY_ROW_ID="repository-detector-repository";
+const ROW_ID="repository-detector-code-repository";
 
 const RepositoryDetector:any = {
   ...core,
@@ -22,6 +24,11 @@ const RepositoryDetector:any = {
       });
     } catch (_) {}
 
+    // Remove stale registrations from older versions before registering v0.2.4.
+    for (const rowID of [LEGACY_ROW_ID, ROW_ID]) {
+      try { Zotero.ItemPaneManager.unregisterInfoRow(rowID); } catch (_) {}
+    }
+
     const locale=String((Zotero as any).locale || "").toLowerCase();
     const codeRepoLabel=locale.startsWith("zh") ? "代码仓库" : "Code Repo";
 
@@ -35,12 +42,13 @@ const RepositoryDetector:any = {
     });
 
     this.rowID=Zotero.ItemPaneManager.registerInfoRow({
-      rowID:"repository-detector-repository",
+      rowID:ROW_ID,
       pluginID:ID,
       label:{l10nID:"repository-detector-info-row-label"},
       position:"afterCreators",
       editable:true,
-      multiline:true,
+      multiline:false,
+      nowrap:true,
       onGetData:({item}:any)=>{
         setTimeout(decorateRepositoryRows,0);
         return repositoryValue(item);
@@ -65,10 +73,11 @@ const RepositoryDetector:any = {
       try { await Zotero.ItemTreeManager.unregisterColumn(this.columnID); } catch (_) {}
       this.columnID=null;
     }
-    if (this.rowID) {
-      try { Zotero.ItemPaneManager.unregisterInfoRow(this.rowID); } catch (_) {}
-      this.rowID=null;
+    for (const rowID of [this.rowID, ROW_ID, LEGACY_ROW_ID]) {
+      if (!rowID) continue;
+      try { Zotero.ItemPaneManager.unregisterInfoRow(rowID); } catch (_) {}
     }
+    this.rowID=null;
     for (const win of Zotero.getMainWindows()) this.removeFromWindow(win);
   },
 
@@ -116,6 +125,12 @@ const RepositoryDetector:any = {
     ]) {
       try { win?.document?.getElementById(id)?.remove(); } catch (_) {}
     }
+    // Remove stale legacy rows that can survive a hot plugin update.
+    try {
+      for (const row of win?.document?.querySelectorAll?.(
+        '.meta-row[data-custom-row-id="'+LEGACY_ROW_ID+'"]'
+      ) || []) row.remove();
+    } catch (_) {}
     this.windows.delete(win);
   },
 };
