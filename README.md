@@ -10,8 +10,8 @@ Repository Detector is a Zotero 7 plugin that detects whether a paper has a publ
 - Recognizes repository URLs already present in item metadata and **Web Link child attachments**.
 - Normalizes deep links such as GitHub `tree/`, `blob/`, and `issues/` URLs back to the repository root.
 - Stores repository URLs in Zotero `Extra` as `repository: ...` for database compatibility.
-- Adds a **Repository** row to the item pane and a **Repository** column to the item list.
-- Opens repository pages directly from the Repository row and Repository column.
+- Adds a **Code Repository** row to the item pane and a **Code Repo** column to the item list.
+- Opens repository pages directly from the Code Repository row and Code Repo column.
 - Adds a configurable `#repository` tag for quick filtering.
 - Shows live progress when scanning multiple selected items.
 - Optionally downloads a repository snapshot and attaches it to the Zotero item when the total size is under the configured threshold (default: **1 MB**).
@@ -34,7 +34,7 @@ Select the downloaded `.xpi` file.
 
 Select one or more regular Zotero items and choose **Detect Open-Source Repository** from the item context menu or Tools menu. For multiple items, a Zotero progress window shows the current item, completed count, repositories found, attachments added, and errors.
 
-When a repository is found, the plugin writes a `repository:` line into the item's Extra field and adds the configured repository tag. A Repository row appears in the item pane, and the Repository column can be enabled in the item list.
+When a repository is found, the plugin writes a `repository:` line into the item's Extra field and adds the configured repository tag. A Code Repository row appears in the item pane, and the Code Repo column can be enabled in the item list.
 
 If a child Web Link attachment points to a supported repository, the parent bibliographic item is treated as having that repository even when no search is required.
 
@@ -57,7 +57,7 @@ Zotero does not expose an API for plugins to add arbitrary permanent database fi
 repository: https://github.com/owner/project
 ```
 
-The plugin presents this value as a dedicated Repository row and Repository column in the UI.
+The plugin presents this value as a dedicated Code Repository row and Code Repo column in the UI.
 
 ## Automatic snapshot download
 
@@ -91,8 +91,8 @@ npm start
 Push a version tag such as:
 
 ```bash
-git tag v0.2.2
-git push origin v0.2.2
+git tag v0.2.3
+git push origin v0.2.3
 ```
 
 The included GitHub Actions release workflow builds the plugin, packages the XPI, generates Zotero `update.json` metadata with a SHA-256 hash, and publishes both files to the tagged GitHub Release.

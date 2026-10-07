@@ -11,9 +11,9 @@ Repository Detector 是一个面向 Zotero 7 的开源代码仓库检测插件�
 - 自动识别论文条目下面的 **Web Link / 网页链接附件**；如果链接指向支持的代码仓库，直接认定为该论文的 Repository。
 - 将 GitHub `tree/`、`blob/`、`issues/` 等深层链接规范化为仓库根地址。
 - 使用 Zotero `Extra` 中的 `repository:` 保存数据，避免修改 Zotero 数据库 schema。
-- 在右侧条目信息区域显示独立的 **Repository** 行。
-- 在条目列表中提供 **Repository** 列。
-- Repository 行和 Repository 列均可直接点击，在系统默认浏览器中打开仓库网页。
+- 在右侧条目信息区域显示独立的 **代码仓库** 行。
+- 在条目列表中提供 **代码仓库** 列。
+- 代码仓库行和代码仓库列均可直接点击，在系统默认浏览器中打开仓库网页。
 - 自动添加可配置的 `#repository` 标签，便于快速筛选有代码实现的论文。
 - 多选条目批量检测时显示实时进度，包括当前论文、完成数量、发现仓库数量、新增附件数量和错误数量。
 - 仓库总容量低于阈值时可自动下载快照并作为 ZIP 子附件挂到论文条目下面，默认阈值为 **1 MB**。
@@ -42,7 +42,7 @@ Repository Detector 是一个面向 Zotero 7 的开源代码仓库检测插件�
 repository: https://github.com/owner/project
 ```
 
-同时更新 Repository UI 和 `#repository` 标签。
+同时更新代码仓库 UI 和 `#repository` 标签。
 
 如果论文下面已有指向 GitHub、Hugging Face 或 Gitee 的 Web Link 子附件，插件会优先把该链接识别为 Repository，而不需要依赖标题搜索。
 
@@ -85,8 +85,8 @@ npm start
 项目已经包含 GitHub Actions。推送版本 tag，例如：
 
 ```bash
-git tag v0.2.2
-git push origin v0.2.2
+git tag v0.2.3
+git push origin v0.2.3
 ```
 
 Release workflow 会自动构建插件、打包 XPI、生成带 SHA-256 校验值的 Zotero `update.json`，并把两者发布到对应 GitHub Release。

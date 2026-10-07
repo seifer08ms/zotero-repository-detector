@@ -22,10 +22,13 @@ const RepositoryDetector:any = {
       });
     } catch (_) {}
 
+    const locale=String((Zotero as any).locale || "").toLowerCase();
+    const codeRepoLabel=locale.startsWith("zh") ? "代码仓库" : "Code Repo";
+
     this.columnID=await Zotero.ItemTreeManager.registerColumn({
       pluginID:ID,
       dataKey:"repository-detector-repository",
-      label:"Repository",
+      label:codeRepoLabel,
       dataProvider:(item:any)=>repositoryValue(item),
       renderCell:(_index:any,data:string,column:any,_first:any,doc:any)=>
         renderRepositoryCell(data,column,doc),
@@ -98,7 +101,7 @@ const RepositoryDetector:any = {
 
     const tools=win.document.getElementById("menu_ToolsPopup");
     add(tools,"repository-detector-scan","检测选中论文的开源代码仓库",()=>this.scanSelected(win));
-    add(tools,"repository-detector-download","下载选中条目的 Repository 快照",()=>this.downloadSelected(win));
+    add(tools,"repository-detector-download","下载选中条目的 Code Repository 快照",()=>this.downloadSelected(win));
 
     const context=win.document.getElementById("zotero-itemmenu");
     add(context,"repository-detector-context","检测开源代码仓库",()=>this.scanSelected(win));

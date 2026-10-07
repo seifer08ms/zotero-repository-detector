@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3
+
+- Renamed the item-pane field to **Code Repository** in English and **代码仓库** in Chinese.
+- Renamed the item-tree column to **Code Repo** in English and **代码仓库** in Chinese.
+- Kept the persisted `repository:` Extra field and `#repository` tag unchanged for compatibility.
+
 ## 0.2.2
 
 - Added real-time progress for multi-item repository detection.
