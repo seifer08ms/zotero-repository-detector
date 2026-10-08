@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Manual and automatic detection now follow the same default policy: skip items whose Extra field already has a non-empty `repository:` value.
+- Added a shared `forceUpdateExisting` preference (disabled by default) that enables re-detection of existing repository items for both manual and automatic scans.
+- The default skip path performs no network requests, metadata writes, or snapshot downloads. Manual batches report skipped items.
+- Force refresh preserves previously recorded repositories while adding newly detected ones.
+- Added a `showProviderIcons` preference (enabled by default) for GitHub, Hugging Face, and Gitee icons in both the Code Repo column and right-side section.
+- Icons are bundled as local SVG resources, with live preference refresh.
+- Existing child Web Link attachments are asynchronously loaded for more reliable detection.
+
 ## 0.2.8
 
 - Fixed duplicate snapshot downloads for existing items after Zotero restart.
@@ -26,7 +36,6 @@
 - Legacy blank repository rows from older versions are unregistered and removed during startup.
 - Localization is loaded before the section is registered.
 
-# Changelog
 
 ## 0.2.5
 
