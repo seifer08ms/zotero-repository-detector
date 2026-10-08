@@ -1,4 +1,24 @@
-import { extractRepositories, platformLabel, repositoryValue } from "./repo";
+import { extractRepositories, platformLabel, repositoryValue, RepoInfo } from "./repo";
+
+function showProviderIcons() {
+  try {
+    const pref=Zotero.Prefs.get("extensions.repositoryDetector.showProviderIcons",true);
+    return pref === undefined || pref === null ? true : pref === true || String(pref) === "true";
+  } catch (_) { return true; }
+}
+
+function providerIcon(doc:any,repo:RepoInfo) {
+  const icon=doc.createElement("img");
+  icon.className="repository-detector-provider-icon";
+  icon.src="chrome://repositorydetector/content/icons/"+repo.platform+".svg";
+  icon.alt=platformLabel(repo);
+  icon.style.width="15px";
+  icon.style.height="15px";
+  icon.style.objectFit="contain";
+  icon.style.flexShrink="0";
+  return icon;
+}
+
 
 function localeIsChinese() {
   return String((Zotero as any).locale || "").toLowerCase().startsWith("zh");
@@ -20,7 +40,13 @@ export function renderRepositoryCell(data:string,column:any,doc:any) {
     const link=doc.createElement("span");
     link.className="text-link";
     link.setAttribute("role","link");
-    link.textContent=platformLabel(repo);
+    if (showProviderIcons()) {
+      link.style.display="inline-flex";
+      link.style.alignItems="center";
+      link.style.gap="4px";
+      link.appendChild(providerIcon(doc,repo));
+    }
+    link.appendChild(doc.createTextNode(platformLabel(repo)));
     link.setAttribute("title",repo.url);
     link.onclick=(event:any)=>{
       event.stopPropagation();
@@ -74,7 +100,13 @@ export function renderRepositorySection(
     row.style.minWidth="0";
 
     const provider=doc.createElement("span");
-    provider.textContent=platformLabel(repo);
+    if (showProviderIcons()) {
+      provider.style.display="inline-flex";
+      provider.style.alignItems="center";
+      provider.style.gap="5px";
+      provider.appendChild(providerIcon(doc,repo));
+    }
+    provider.appendChild(doc.createTextNode(platformLabel(repo)));
     provider.style.fontWeight="600";
     provider.style.whiteSpace="nowrap";
     row.appendChild(provider);
@@ -130,13 +162,13 @@ export function createProgress(total:number) {
 
 export function updateProgress(
   progress:any, completed:number, title:string,
-  found:number, attached:number, errors:number
+  found:number, attached:number, errors:number, skipped=0
 ) {
   if (!progress) return;
   progress.pw.changeHeadline("检测开源项目 "+completed+"/"+progress.total);
   progress.line.setProgress(Math.round(completed/progress.total*100));
   progress.line.setText(
-    String(title).slice(0,60)+" · Repo "+found+" · 下载 "+attached+" · 错误 "+errors
+    String(title).slice(0,60)+" · Repo "+found+" · 下载 "+attached+" · 跳过 "+skipped+" · 错误 "+errors
   );
 }
 
