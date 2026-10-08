@@ -1,5 +1,7 @@
 import { parseRepository } from "./repo";
 
+const downloadLocks = new Map<string, Promise<string>>();
+
 async function response(url:string, timeoutMs:number) {
   const win:any = Zotero.getMainWindow?.();
   const fetchFn = win?.fetch?.bind(win) || globalThis.fetch;
@@ -22,6 +24,20 @@ async function jsonWithFallback(urls:string[], timeoutMs:number) {
   throw last || new Error("Request failed");
 }
 
+async function findExistingSnapshot(item:any, repoURL:string) {
+  for (const id of item.getAttachments?.() || []) {
+    let a:any;
+    try { a = Zotero.Items.get(id); } catch (_) { continue; }
+    if (!a) continue;
+    const url = String(a.getField?.("url") || "");
+    const title = String(a.getField?.("title") || "");
+    if (url === repoURL || (title.startsWith("Repository Snapshot — ") && url === repoURL)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export async function downloadSnapshot(
   item:any,
   repoURL:string,
@@ -30,12 +46,14 @@ export async function downloadSnapshot(
   const repo = parseRepository(repoURL);
   if (!repo || repo.platform === "huggingface") return "unsupported";
 
-  for (const id of item.getAttachments?.() || []) {
-    const a:any = Zotero.Items.get(id);
-    if (String(a?.getField?.("url") || "") === repo.url) return "exists";
-  }
+  const key = item.id + "|" + repo.url;
+  const existingLock = downloadLocks.get(key);
+  if (existingLock) return existingLock;
 
-  try {
+  const task = (async () => {
+    if (await findExistingSnapshot(item, repo.url)) return "exists";
+
+    try {
     const api = repo.platform === "github"
       ? "https://api.github.com/repos/" + repo.id
       : "https://gitee.com/api/v5/repos/" + repo.id;
@@ -64,6 +82,9 @@ export async function downloadSnapshot(
     }
     if (!data) return "failed";
 
+    // A concurrent or earlier run may have attached the snapshot while we were downloading.
+    if (await findExistingSnapshot(item, repo.url)) return "exists";
+
     const file = Zotero.getTempDirectory().clone();
     file.append(("repo-" + repo.owner + "-" + repo.repo + ".zip").replace(/[^\w.-]/g,"_"));
     file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0o600);
@@ -77,8 +98,16 @@ export async function downloadSnapshot(
     await attachment.saveTx();
     try { file.remove(false); } catch (_) {}
     return "attached";
-  } catch (e) {
-    Zotero.logError(e);
-    return "failed";
+    } catch (e) {
+      Zotero.logError(e);
+      return "failed";
+    }
+  })();
+
+  downloadLocks.set(key, task);
+  try {
+    return await task;
+  } finally {
+    if (downloadLocks.get(key) === task) downloadLocks.delete(key);
   }
 }
