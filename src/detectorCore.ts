@@ -48,15 +48,26 @@ const core:any = {
     return out;
   },
 
-  async detectRepositories(item:any) {
+  async detectRepositories(item:any, options:{excludeStoredRepository?:boolean}={}) {
     const direct=new Map<string,any>();
-    const text=["url","extra","abstractNote"].map(f=>item.getField(f)||"").join("\n");
+    const extra=String(item.getField("extra") || "");
+    // When explicitly refreshing a known repository, do not mistake the saved
+    // result for new detection evidence.
+    const searchableExtra=options.excludeStoredRepository
+      ? extra.split(/\r?\n/).filter((line:string)=>!/^\s*repository\s*:/i.test(line)).join("\n")
+      : extra;
+    const text=[item.getField("url") || "",searchableExtra,item.getField("abstractNote") || ""].join("\n");
     for (const repo of extractRepositories(text)) direct.set(repo.url,repo);
 
     for (const id of item.getAttachments?.() || []) {
-      const attachment:any=Zotero.Items.get(id);
+      let attachment:any;
+      try { attachment=await Zotero.Items.getAsync(id); }
+      catch (e) { Zotero.logError(e); continue; }
       if (!attachment?.isAttachment?.()) continue;
-      for (const repo of extractRepositories(attachment.getField("url") || "")) {
+      // Snapshot attachments are old output, not a source of fresh results.
+      const title=String(attachment.getField("title") || "");
+      if (options.excludeStoredRepository && title.startsWith("Repository Snapshot")) continue;
+      for (const repo of extractRepositories(String(attachment.getField("url") || ""))) {
         direct.set(repo.url,repo);
       }
     }
@@ -77,17 +88,39 @@ const core:any = {
   },
 
   async scanItem(item:any,manual=true) {
-    const repos=await this.detectRepositories(item);
-    const urls:string[]=repos.map((x:any)=>String(x.url)).filter(Boolean);
-    const normalized:string[]=[...new Set<string>(urls)];
-    if (normalized.length) {
-      await setRepositoryValue(item,normalized.join("; "),this.tagName());
-      try { await this.refreshRepositoryUI?.(item.id); } catch (e) { Zotero.logError(e); }
+    // One policy for ALL entry points: manual, batch, and Zotero notifier.
+    // Existing repository metadata is immutable by default, and no network or
+    // snapshot download must happen in the skip branch.
+    const stored=repositoryValue(item).trim();
+    const force=this.prefBool("forceUpdateExisting",false);
+    if (stored && !force) {
+      return {urls:[],attached:0,skipped:true};
+    }
+
+    const detected=await this.detectRepositories(item,{
+      excludeStoredRepository:!!stored,
+    });
+    const newUrls:string[]=[...new Set<string>(
+      detected.map((x:any)=>String(x.url)).filter(Boolean)
+    )];
+    const oldUrls:string[]=stored
+      ? extractRepositories(stored).map(repo=>repo.url)
+      : [];
+
+    // Force-refresh discovers new repos but never silently drops existing ones.
+    const urls:string[]=[...new Set<string>([...oldUrls,...newUrls])];
+    const shouldSave=urls.length>0 && (
+      !stored || newUrls.some(url=>!oldUrls.includes(url))
+    );
+    if (shouldSave) {
+      await setRepositoryValue(item,urls.join("; "),this.tagName());
+      try { await this.refreshRepositoryUI?.(item.id); }
+      catch (e) { Zotero.logError(e); }
     }
 
     let attached=0;
-    if (normalized.length && this.prefBool("autoDownload",true)) {
-      for (const url of normalized) {
+    if (urls.length && this.prefBool("autoDownload",true)) {
+      for (const url of urls) {
         const result=await downloadSnapshot(item,url,{
           maxBytes:this.maxDownloadBytes(),
           timeoutMs:this.requestTimeout(),
@@ -96,8 +129,10 @@ const core:any = {
         if (result === "attached") attached++;
       }
     }
-    if (manual && !urls.length) toast("未检测到 Repository："+(item.getField("title")||""));
-    return {urls:normalized,attached};
+    if (manual && !urls.length) {
+      toast("未检测到 Repository："+(item.getField("title")||""));
+    }
+    return {urls,attached,skipped:false};
   },
 
   async scanSelected(win:any) {
@@ -105,24 +140,27 @@ const core:any = {
     if (!items.length) return toast("请选择论文条目");
 
     const progress=createProgress(items.length);
-    let found=0,attached=0,errors=0;
+    let found=0,attached=0,errors=0,skipped=0;
     for (let i=0;i<items.length;i++) {
       const item=items[i];
       const title=item.getField("title") || "未命名条目";
-      updateProgress(progress,i,title,found,attached,errors);
+      updateProgress(progress,i,title,found,attached,errors,skipped);
       try {
         const result=await this.scanItem(item,true);
-        if (result.urls.length) found++;
+        if (result.skipped) skipped++;
+        else if (result.urls.length) found++;
         attached+=result.attached;
       } catch (e) {
         errors++;
         Zotero.logError(e);
       }
-      updateProgress(progress,i+1,title,found,attached,errors);
+      updateProgress(progress,i+1,title,found,attached,errors,skipped);
     }
     if (progress) {
       progress.line.setProgress(100);
       progress.pw.startCloseTimer(4500);
+    } else if (skipped) {
+      toast("已跳过 "+skipped+" 个已有 Repository 的条目；需要重检请开启“强制更新已有 Repository”");
     } else {
       toast(found ? "检测到 "+found+" 个有 Repository 的条目" : "未检测到 Repository");
     }
