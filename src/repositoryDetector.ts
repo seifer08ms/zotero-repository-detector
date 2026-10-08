@@ -127,12 +127,16 @@ const RepositoryDetector:any = {
   },
 
   async refreshRepositoryUI(_itemID?:number) {
-    for (const refresh of Array.from(this.sectionRefreshers)) {
+    const refreshers=Array.from(
+      this.sectionRefreshers as Set<() => Promise<void> | void>
+    );
+    for (const refresh of refreshers) {
       try { await refresh(); } catch (e) { Zotero.logError(e); }
     }
     try {
-      for (const win of Zotero.getMainWindows()) {
-        win?.ZoteroPane?.itemsView?.refresh?.();
+      for (const win of Zotero.getMainWindows() as any[]) {
+        const view:any=win?.ZoteroPane?.itemsView;
+        if (view && typeof view.refresh === "function") view.refresh();
       }
     } catch (_) {}
   },
