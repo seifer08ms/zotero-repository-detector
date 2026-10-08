@@ -1,4 +1,6 @@
 pref("extensions.repositoryDetector.autoDetectOnAdd", true);
+pref("extensions.repositoryDetector.forceUpdateExisting", false);
+pref("extensions.repositoryDetector.showProviderIcons", true);
 pref("extensions.repositoryDetector.autoDownload", true);
 pref("extensions.repositoryDetector.maxDownloadMB", "1");
 pref("extensions.repositoryDetector.minConfidence", "0.84");
