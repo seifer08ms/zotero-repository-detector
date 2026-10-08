@@ -16,6 +16,7 @@ const RepositoryDetector:any = {
   columnID:null,
   sectionID:null,
   notifierID:null,
+  iconsPreferenceObserverID:null,
   windows:new Set<any>(),
   autoScanTimers:new Map<number, any>(),
   autoScanInFlight:new Set<number>(),
@@ -97,10 +98,21 @@ const RepositoryDetector:any = {
     });
 
     this.notifierID=Zotero.Notifier.registerObserver(this,["item"],"repository-detector");
+    try {
+      this.iconsPreferenceObserverID=Zotero.Prefs.registerObserver(
+        "extensions.repositoryDetector.showProviderIcons",
+        ()=>{ void this.refreshRepositoryUI(); }
+      );
+    } catch (e) { Zotero.logError(e); }
     for (const win of Zotero.getMainWindows()) this.addToWindow(win);
   },
 
   async shutdown() {
+    if (this.iconsPreferenceObserverID) {
+      try { Zotero.Prefs.unregisterObserver(this.iconsPreferenceObserverID); }
+      catch (e) { Zotero.logError(e); }
+      this.iconsPreferenceObserverID=null;
+    }
     if (this.notifierID) {
       try { Zotero.Notifier.unregisterObserver(this.notifierID); } catch (_) {}
       this.notifierID=null;
