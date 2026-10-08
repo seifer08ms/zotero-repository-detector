@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.7
+
+- Debounced rapid Zotero add/modify notifications for newly created items.
+- Added an item-level in-flight scan lock and short cooldown to prevent repeated automatic scans caused by the plugin's own writes.
+- Added a per-item/per-repository download lock.
+- Re-checks existing snapshot attachments immediately before import to prevent duplicate Repository Snapshot ZIPs.
+- Deduplicates repository URLs before saving and downloading.
+- Explicitly refreshes the Code Repository item-pane section and item list after repository metadata is written.
+
 ## 0.2.6
 
 - Replaced the fragile custom Info Row with Zotero 7's official custom Item Pane Section API.
