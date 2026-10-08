@@ -1,7 +1,7 @@
 {
   "name": "zotero-repository-detector",
   "type": "module",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "A Zotero 7+ plugin that detects open-source repositories for papers and can attach small repository snapshots.",
   "config": {
     "addonName": "Repository Detector",
