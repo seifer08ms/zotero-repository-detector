@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.8
+
+- Fixed duplicate snapshot downloads for existing items after Zotero restart.
+- Existing child attachments are now loaded with Zotero.Items.getAsync() before duplicate checks.
+- Repository snapshot deduplication compares normalized repository identities instead of raw URL strings.
+- Added a legacy compatibility fallback using the Repository Snapshot — owner/repo attachment title.
+- Preserves the v0.2.7 item-level scan debounce, in-flight scan lock, cooldown, and per-repository download lock.
+
 ## 0.2.7
 
 - Debounced rapid Zotero add/modify notifications for newly created items.
