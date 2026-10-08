@@ -17,6 +17,10 @@ const RepositoryDetector:any = {
   sectionID:null,
   notifierID:null,
   windows:new Set<any>(),
+  autoScanTimers:new Map<number, any>(),
+  autoScanInFlight:new Set<number>(),
+  autoScanCooldownUntil:new Map<number, number>(),
+  sectionRefreshers:new Set<() => Promise<void> | void>(),
 
   ensureLocalization(win:any) {
     try { win?.MozXULElement?.insertFTLIfNeeded(FTL_FILE); } catch (_) {}
@@ -77,6 +81,12 @@ const RepositoryDetector:any = {
         l10nID:"repository-detector-section-sidenav",
         icon:"chrome://zotero/skin/20/universal/save.svg",
       },
+      onInit:({refresh}:any)=>{
+        if (refresh) this.sectionRefreshers.add(refresh);
+      },
+      onDestroy:({refresh}:any)=>{
+        if (refresh) this.sectionRefreshers.delete(refresh);
+      },
       onItemChange:({item,setEnabled}:any)=>{
         setEnabled(!!item?.isRegularItem?.());
         return true;
@@ -106,19 +116,78 @@ const RepositoryDetector:any = {
     for (const rowID of LEGACY_ROW_IDS) {
       try { Zotero.ItemPaneManager.unregisterInfoRow(rowID); } catch (_) {}
     }
+    for (const timer of this.autoScanTimers.values()) {
+      try { clearTimeout(timer); } catch (_) {}
+    }
+    this.autoScanTimers.clear();
+    this.autoScanInFlight.clear();
+    this.autoScanCooldownUntil.clear();
+    this.sectionRefreshers.clear();
     for (const win of Zotero.getMainWindows()) this.removeFromWindow(win);
+  },
+
+  async refreshRepositoryUI(_itemID?:number) {
+    for (const refresh of Array.from(this.sectionRefreshers)) {
+      try { await refresh(); } catch (e) { Zotero.logError(e); }
+    }
+    try {
+      for (const win of Zotero.getMainWindows()) {
+        win?.ZoteroPane?.itemsView?.refresh?.();
+      }
+    } catch (_) {}
+  },
+
+  scheduleAutoScan(item:any) {
+    const itemID=Number(item?.id);
+    if (!itemID) return;
+
+    if (this.autoScanInFlight.has(itemID)) return;
+    const cooldown=this.autoScanCooldownUntil.get(itemID) || 0;
+    if (Date.now() < cooldown) return;
+
+    const oldTimer=this.autoScanTimers.get(itemID);
+    if (oldTimer) {
+      try { clearTimeout(oldTimer); } catch (_) {}
+    }
+
+    const timer=setTimeout(async()=>{
+      this.autoScanTimers.delete(itemID);
+      if (this.autoScanInFlight.has(itemID)) return;
+
+      let fresh:any;
+      try { fresh=await Zotero.Items.getAsync(itemID); }
+      catch (e) { Zotero.logError(e); return; }
+      if (!fresh?.isRegularItem?.() || fresh.deleted) return;
+
+      this.autoScanInFlight.add(itemID);
+      try {
+        await this.scanItem(fresh,false);
+      } catch (e) {
+        Zotero.logError(e);
+      } finally {
+        this.autoScanInFlight.delete(itemID);
+        // Ignore our own save/attachment notifications for a short period.
+        this.autoScanCooldownUntil.set(itemID,Date.now()+5000);
+        setTimeout(()=>{
+          if ((this.autoScanCooldownUntil.get(itemID)||0) <= Date.now()) {
+            this.autoScanCooldownUntil.delete(itemID);
+          }
+        },5200);
+      }
+    },1800);
+
+    this.autoScanTimers.set(itemID,timer);
   },
 
   notify(event:string,type:string,ids:any[]) {
     if (type !== "item" || !["add","modify"].includes(event) || !this.prefBool("autoDetectOnAdd",true)) return;
     for (const id of ids || []) {
-      let item:any=Zotero.Items.get(id);
-      if (item?.isAttachment?.() && item.parentItemID) item=Zotero.Items.get(item.parentItemID);
-      if (item?.isRegularItem?.()) {
-        Zotero.Promise.delay(900)
-          .then(()=>this.scanItem(item,false))
-          .catch((e:any)=>Zotero.logError(e));
+      let item:any;
+      try { item=Zotero.Items.get(id); } catch (_) { continue; }
+      if (item?.isAttachment?.() && item.parentItemID) {
+        try { item=Zotero.Items.get(item.parentItemID); } catch (_) { continue; }
       }
+      if (item?.isRegularItem?.()) this.scheduleAutoScan(item);
     }
   },
 
