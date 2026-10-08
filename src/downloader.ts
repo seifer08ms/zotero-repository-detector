@@ -24,17 +24,48 @@ async function jsonWithFallback(urls:string[], timeoutMs:number) {
   throw last || new Error("Request failed");
 }
 
+function snapshotKey(rawURL:string) {
+  const repo = parseRepository(rawURL);
+  if (!repo) return "";
+  if (repo.platform === "github" || repo.platform === "gitee") {
+    return repo.platform + ":" + repo.id.toLowerCase();
+  }
+  return repo.platform + ":" + repo.id;
+}
+
 async function findExistingSnapshot(item:any, repoURL:string) {
-  for (const id of item.getAttachments?.() || []) {
-    let a:any;
-    try { a = Zotero.Items.get(id); } catch (_) { continue; }
-    if (!a) continue;
-    const url = String(a.getField?.("url") || "");
-    const title = String(a.getField?.("title") || "");
-    if (url === repoURL || (title.startsWith("Repository Snapshot — ") && url === repoURL)) {
+  const wantedRepo = parseRepository(repoURL);
+  if (!wantedRepo) return false;
+
+  const wantedKey = snapshotKey(wantedRepo.url);
+  const wantedTitle = ("Repository Snapshot — " + wantedRepo.id).toLowerCase();
+  const attachmentIDs = item.getAttachments?.() || [];
+
+  for (const id of attachmentIDs) {
+    let attachment:any;
+    try {
+      attachment = await Zotero.Items.getAsync(id);
+    } catch (e) {
+      Zotero.logError(e);
+      continue;
+    }
+    if (!attachment?.isAttachment?.()) continue;
+
+    const attachmentURL = String(attachment.getField?.("url") || "").trim();
+    const attachmentTitle = String(attachment.getField?.("title") || "").trim();
+
+    // Preferred check: compare normalized repository identities instead of raw URLs.
+    if (attachmentURL && snapshotKey(attachmentURL) === wantedKey) {
+      return true;
+    }
+
+    // Compatibility check for snapshots created by older plugin versions,
+    // including cases where the URL field was not persisted or has been edited.
+    if (attachmentTitle.toLowerCase() === wantedTitle) {
       return true;
     }
   }
+
   return false;
 }
 
