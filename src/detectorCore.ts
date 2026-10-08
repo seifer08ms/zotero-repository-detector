@@ -80,12 +80,14 @@ const core:any = {
     const repos=await this.detectRepositories(item);
     const urls=repos.map((x:any)=>x.url);
     if (urls.length) {
-      await setRepositoryValue(item,urls.join("; "),this.tagName());
+      const normalized=[...new Set(urls)];
+      await setRepositoryValue(item,normalized.join("; "),this.tagName());
+      try { await this.refreshRepositoryUI?.(item.id); } catch (e) { Zotero.logError(e); }
     }
 
     let attached=0;
     if (urls.length && this.prefBool("autoDownload",true)) {
-      for (const url of urls) {
+      for (const url of [...new Set(urls)]) {
         const result=await downloadSnapshot(item,url,{
           maxBytes:this.maxDownloadBytes(),
           timeoutMs:this.requestTimeout(),
