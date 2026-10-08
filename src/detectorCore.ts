@@ -78,16 +78,16 @@ const core:any = {
 
   async scanItem(item:any,manual=true) {
     const repos=await this.detectRepositories(item);
-    const urls=repos.map((x:any)=>x.url);
-    if (urls.length) {
-      const normalized=[...new Set(urls)];
+    const urls:string[]=repos.map((x:any)=>String(x.url)).filter(Boolean);
+    const normalized:string[]=[...new Set<string>(urls)];
+    if (normalized.length) {
       await setRepositoryValue(item,normalized.join("; "),this.tagName());
       try { await this.refreshRepositoryUI?.(item.id); } catch (e) { Zotero.logError(e); }
     }
 
     let attached=0;
-    if (urls.length && this.prefBool("autoDownload",true)) {
-      for (const url of [...new Set(urls)]) {
+    if (normalized.length && this.prefBool("autoDownload",true)) {
+      for (const url of normalized) {
         const result=await downloadSnapshot(item,url,{
           maxBytes:this.maxDownloadBytes(),
           timeoutMs:this.requestTimeout(),
@@ -97,7 +97,7 @@ const core:any = {
       }
     }
     if (manual && !urls.length) toast("未检测到 Repository："+(item.getField("title")||""));
-    return {urls,attached};
+    return {urls:normalized,attached};
   },
 
   async scanSelected(win:any) {
