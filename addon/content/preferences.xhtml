@@ -3,7 +3,14 @@
   <groupbox data-search-strings-raw="Repository Detector, repository, repo, GitHub, Hugging Face, Gitee">
     <label><html:h2>Repository Detector</html:h2></label>
     <checkbox label="新导入论文后自动检测代码仓库" preference="extensions.repositoryDetector.autoDetectOnAdd"/>
+    <checkbox label="强制更新已有 Repository 的条目（自动与手动检测均适用）" preference="extensions.repositoryDetector.forceUpdateExisting"/>
+    <description>默认关闭：已有 repository: 字段的论文在手动批量检测和自动检测时都会跳过，也不会再次下载快照。开启后会重新识别，并保留已经记录的仓库链接。</description>
     <checkbox label="检测到小型仓库时自动下载并关联到条目" preference="extensions.repositoryDetector.autoDownload"/>
+  </groupbox>
+  <groupbox>
+    <label><html:h2>界面显示</html:h2></label>
+    <checkbox label="显示 GitHub / Hugging Face / Gitee 仓库平台图标（右侧区块与条目列表列）" preference="extensions.repositoryDetector.showProviderIcons"/>
+    <description>图标随插件离线提供。关闭后保留仓库名称和可点击链接。</description>
   </groupbox>
   <groupbox>
     <label><html:h2>仓库来源</html:h2></label>
